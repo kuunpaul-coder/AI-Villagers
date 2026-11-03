@@ -158,7 +158,7 @@ class MainActivity : Activity() {
                         "Не утверждай, что можешь менять игровой мир или сохранять игровые данные."
                     )
                 ))
-                val server = LocalApiServer { request ->
+                val server = LocalApiServer(handler = { request ->
                     worker.submit<JSONObject> {
                         val npc = request.optString("npc", "Житель Пеликан-Тауна")
                         val playerMessage = request.optString("message", "").trim()
@@ -175,7 +175,7 @@ class MainActivity : Activity() {
                             ?: throw IllegalStateException("Модель ещё не загружена")
                         JSONObject().put("reply", answer).put("npc", npc)
                     }.get(120, TimeUnit.SECONDS)
-                }
+                })
                 server.start()
                 apiServer = server
                 main.post {
