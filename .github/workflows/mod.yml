@@ -1,0 +1,46 @@
+name: Build AI Villagers SMAPI Mod
+
+on:
+  push:
+    paths:
+      - "mod/**"
+      - ".github/workflows/mod.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Checkout Stardew reference assemblies
+        uses: actions/checkout@v4
+        with:
+          repository: StardewModders/mod-reference-assemblies
+          ref: 0141355fecb8536715ecff22f99374b5e632cbed
+          path: reference-assemblies
+
+      - name: Setup .NET 6
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 6.0.x
+
+      - name: Build mod
+        run: |
+          dotnet build mod/AI.Villagers/AI.Villagers.csproj --configuration Release -p:ReferenceAssembliesDir="$GITHUB_WORKSPACE/reference-assemblies"
+
+      - name: Package mod
+        run: |
+          mkdir -p package/AI.Villagers
+          cp mod/AI.Villagers/manifest.json package/AI.Villagers/
+          cp mod/AI.Villagers/bin/Release/net6.0/AI.Villagers.dll package/AI.Villagers/
+          cd package
+          zip -r ../AI-Villagers-SMAPI-Android-test.zip AI.Villagers
+
+      - name: Upload mod ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: AI-Villagers-SMAPI-Android-test
+          path: AI-Villagers-SMAPI-Android-test.zip
+          if-no-files-found: error
