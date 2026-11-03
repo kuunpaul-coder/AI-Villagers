@@ -161,6 +161,7 @@ class MainActivity : Activity() {
                 val server = LocalApiServer(
                     isModelReady = { conversation != null },
                     handler = { request ->
+                    main.post { status.text = "Получен запрос из Stardew Valley. Gemma готовит ответ..." }
                     worker.submit<JSONObject> {
                         val npc = request.optString("npc", "Житель Пеликан-Тауна")
                         val playerMessage = request.optString("message", "").trim()
@@ -176,7 +177,9 @@ class MainActivity : Activity() {
                         val answer = conversation?.sendMessage(fullPrompt)?.toString()
                             ?: throw IllegalStateException("Модель ещё не загружена")
                         JSONObject().put("reply", answer).put("npc", npc)
-                    }.get(120, TimeUnit.SECONDS)
+                    }.get(240, TimeUnit.SECONDS).also {
+                        main.post { status.text = "Ответ Gemma отправлен в Stardew Valley." }
+                    }
                 })
                 server.start()
                 apiServer = server
