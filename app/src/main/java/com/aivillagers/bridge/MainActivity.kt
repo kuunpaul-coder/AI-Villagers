@@ -158,7 +158,9 @@ class MainActivity : Activity() {
                         "Не утверждай, что можешь менять игровой мир или сохранять игровые данные."
                     )
                 ))
-                val server = LocalApiServer(handler = { request ->
+                val server = LocalApiServer(
+                    isModelReady = { conversation != null },
+                    handler = { request ->
                     worker.submit<JSONObject> {
                         val npc = request.optString("npc", "Житель Пеликан-Тауна")
                         val playerMessage = request.optString("message", "").trim()
