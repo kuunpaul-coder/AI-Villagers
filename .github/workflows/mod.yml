@@ -21,6 +21,14 @@ jobs:
           ref: 0141355fecb8536715ecff22f99374b5e632cbed
           path: reference-assemblies
 
+      - name: Verify reference assemblies
+        run: |
+          echo "Reference assembly directory:"
+          ls -lah "$GITHUB_WORKSPACE/reference-assemblies"
+          test -f "$GITHUB_WORKSPACE/reference-assemblies/StardewModdingAPI.dll"
+          test -f "$GITHUB_WORKSPACE/reference-assemblies/Stardew Valley.dll"
+          test -f "$GITHUB_WORKSPACE/reference-assemblies/MonoGame.Framework.dll"
+
       - name: Setup .NET 6
         uses: actions/setup-dotnet@v4
         with:
@@ -28,7 +36,7 @@ jobs:
 
       - name: Build mod
         run: |
-          dotnet build mod/AI.Villagers/AI.Villagers.csproj --configuration Release -p:ReferenceAssembliesDir="$GITHUB_WORKSPACE/reference-assemblies"
+          dotnet build mod/AI.Villagers/AI.Villagers.csproj --configuration Release -p:ReferenceAssembliesDir="$GITHUB_WORKSPACE/reference-assemblies" --verbosity minimal
 
       - name: Package mod
         run: |
