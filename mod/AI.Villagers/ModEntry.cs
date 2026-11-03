@@ -16,7 +16,7 @@ public sealed class ModEntry : Mod
         UseProxy = false
     })
     {
-        Timeout = TimeSpan.FromSeconds(125)
+        Timeout = TimeSpan.FromSeconds(300)
     };
 
     private readonly ConcurrentQueue<string> messagesToShow = new();
