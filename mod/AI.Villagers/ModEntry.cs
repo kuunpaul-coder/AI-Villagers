@@ -10,7 +10,11 @@ namespace AI.Villagers;
 
 public sealed class ModEntry : Mod
 {
-    private static readonly HttpClient Client = new()
+    // Bypass Android/system HTTP proxies: the bridge is on this device's loopback.
+    private static readonly HttpClient Client = new(new HttpClientHandler
+    {
+        UseProxy = false
+    })
     {
         Timeout = TimeSpan.FromSeconds(125)
     };
@@ -119,7 +123,7 @@ public sealed class ModEntry : Mod
         catch (Exception ex)
         {
             this.messagesToShow.Enqueue(
-                "Не удалось связаться с Gemma. Проверь, что приложение AI Villagers открыто и модель загружена. " + ex.Message
+                "Нет соединения с AI Villagers (127.0.0.1:8765). Открой приложение AI Villagers, загрузи Gemma и оставь его работать. Подробности: " + ex.GetType().Name + ": " + ex.Message
             );
         }
         finally
