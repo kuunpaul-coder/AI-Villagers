@@ -159,20 +159,22 @@ class MainActivity : Activity() {
                     )
                 ))
                 val server = LocalApiServer { request ->
-                    val npc = request.optString("npc", "Житель Пеликан-Тауна")
-                    val playerMessage = request.optString("message", "").trim()
-                    val context = request.optString("context", "").trim()
-                    require(playerMessage.isNotEmpty()) { "Поле message не должно быть пустым" }
-                    val fullPrompt = buildString {
-                        append("Имя персонажа: ").append(npc).append(".\n")
-                        if (context.isNotEmpty()) {
-                            append("Контекст игры и отношений: ").append(context).append("\n")
+                    worker.submit<JSONObject> {
+                        val npc = request.optString("npc", "Житель Пеликан-Тауна")
+                        val playerMessage = request.optString("message", "").trim()
+                        val context = request.optString("context", "").trim()
+                        require(playerMessage.isNotEmpty()) { "Поле message не должно быть пустым" }
+                        val fullPrompt = buildString {
+                            append("Имя персонажа: ").append(npc).append(".\\n")
+                            if (context.isNotEmpty()) {
+                                append("Контекст игры и отношений: ").append(context).append("\\n")
+                            }
+                            append("Реплика игрока: ").append(playerMessage)
                         }
-                        append("Реплика игрока: ").append(playerMessage)
-                    }
-                    val answer = conversation?.sendMessage(fullPrompt)?.toString()
-                        ?: throw IllegalStateException("Модель ещё не загружена")
-                    JSONObject().put("reply", answer).put("npc", npc)
+                        val answer = conversation?.sendMessage(fullPrompt)?.toString()
+                            ?: throw IllegalStateException("Модель ещё не загружена")
+                        JSONObject().put("reply", answer).put("npc", npc)
+                    }.get(120, TimeUnit.SECONDS)
                 }
                 server.start()
                 apiServer = server
