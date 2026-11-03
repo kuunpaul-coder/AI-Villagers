@@ -20,8 +20,10 @@ import com.google.ai.edge.litertlm.Conversation
 import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
+import org.json.JSONObject
 import java.io.File
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class MainActivity : Activity() {
     private val worker = Executors.newSingleThreadExecutor()
@@ -29,6 +31,7 @@ class MainActivity : Activity() {
     private var engine: Engine? = null
     private var conversation: Conversation? = null
     private var modelFile: File? = null
+    private var apiServer: LocalApiServer? = null
     private lateinit var status: TextView
     private lateinit var transcript: TextView
     private lateinit var prompt: EditText
@@ -151,16 +154,35 @@ class MainActivity : Activity() {
                     systemInstruction = Contents.of(
                         "Ты — житель Пеликан-Тауна из Stardew Valley. " +
                         "Отвечай естественно, по-русски, сохраняй характер NPC. " +
+                        "Учитывай имя NPC и контекст, переданные в сообщении. " +
                         "Не утверждай, что можешь менять игровой мир или сохранять игровые данные."
                     )
                 ))
+                val server = LocalApiServer { request ->
+                    val npc = request.optString("npc", "Житель Пеликан-Тауна")
+                    val playerMessage = request.optString("message", "").trim()
+                    val context = request.optString("context", "").trim()
+                    require(playerMessage.isNotEmpty()) { "Поле message не должно быть пустым" }
+                    val fullPrompt = buildString {
+                        append("Имя персонажа: ").append(npc).append(".\n")
+                        if (context.isNotEmpty()) {
+                            append("Контекст игры и отношений: ").append(context).append("\n")
+                        }
+                        append("Реплика игрока: ").append(playerMessage)
+                    }
+                    val answer = conversation?.sendMessage(fullPrompt)?.toString()
+                        ?: throw IllegalStateException("Модель ещё не загружена")
+                    JSONObject().put("reply", answer).put("npc", npc)
+                }
+                server.start()
+                apiServer = server
                 main.post {
-                    status.text = "Gemma загружена локально. Можно общаться."
+                    status.text = "Gemma загружена. Локальный API работает: 127.0.0.1:8765"
                     sendButton.isEnabled = true
                 }
             } catch (t: Throwable) {
                 main.post {
-                    status.text = "Не удалось загрузить модель: " + t.message
+                    status.text = "Не удалось загрузить модель/API: " + t.message
                     loadButton.isEnabled = true
                 }
             }
@@ -190,6 +212,7 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        apiServer?.stop()
         worker.execute {
             try { conversation?.close() } catch (_: Throwable) {}
             try { engine?.close() } catch (_: Throwable) {}
