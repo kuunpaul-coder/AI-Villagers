@@ -31,7 +31,10 @@ class LocalApiServer(
         // Bind before reporting success to the UI. Previously binding happened in
         // a background thread and its exception was swallowed, producing a false
         // "server started" status even when the port was unavailable.
-        val server = ServerSocket(port, 16, InetAddress.getByName("127.0.0.1"))
+        val server = ServerSocket().apply {
+            reuseAddress = true
+            bind(java.net.InetSocketAddress(InetAddress.getByName("0.0.0.0"), port), 32)
+        }
         socket = server
         running.set(true)
         thread = Thread({
