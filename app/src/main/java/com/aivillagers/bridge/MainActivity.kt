@@ -175,7 +175,7 @@ class MainActivity : Activity() {
         prompt.text.clear()
         worker.execute {
             try {
-                val answer = conversation?.sendMessage(text)?.text ?: "Нет ответа"
+                val answer = conversation?.sendMessage(text)?.toString() ?: "Нет ответа"
                 main.post {
                     transcript.append("\n" + answer)
                     sendButton.isEnabled = true
