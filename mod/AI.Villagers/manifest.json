@@ -1,0 +1,10 @@
+{
+  "Name": "AI Villagers",
+  "Author": "AI Villagers Project",
+  "Version": "0.1.0",
+  "Description": "Experimental bridge between Stardew Valley and the local Gemma model on Android.",
+  "UniqueID": "AIVillagers.LocalGemmaBridge",
+  "EntryDll": "AI.Villagers.dll",
+  "MinimumApiVersion": "4.0.0",
+  "UpdateKeys": []
+}
