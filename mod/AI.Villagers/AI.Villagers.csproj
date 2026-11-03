@@ -9,16 +9,7 @@
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="StardewModdingAPI">
-      <HintPath>$(ReferenceAssembliesDir)/StardewModdingAPI.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="Stardew Valley">
-      <HintPath>$(ReferenceAssembliesDir)/Stardew Valley.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="MonoGame.Framework">
-      <HintPath>$(ReferenceAssembliesDir)/MonoGame.Framework.dll</HintPath>
+    <Reference Include="$(ReferenceAssembliesDir)/*.dll">
       <Private>false</Private>
     </Reference>
   </ItemGroup>
