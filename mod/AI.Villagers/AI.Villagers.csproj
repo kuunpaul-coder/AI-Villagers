@@ -13,5 +13,13 @@
       <HintPath>$(ReferenceAssembliesDir)/StardewModdingAPI.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="Stardew Valley">
+      <HintPath>$(ReferenceAssembliesDir)/Stardew Valley.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="MonoGame.Framework">
+      <HintPath>$(ReferenceAssembliesDir)/MonoGame.Framework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 </Project>
