@@ -33,8 +33,8 @@ class LocalApiServer(
                     try {
                         val client = server.accept()
                         Thread({ handle(client) }, "ai-villagers-client").start()
-                    } catch (_: Exception) {
-                        if (running.get()) throw
+                    } catch (t: Exception) {
+                        if (running.get()) throw t
                     }
                 }
             } catch (t: Throwable) {
