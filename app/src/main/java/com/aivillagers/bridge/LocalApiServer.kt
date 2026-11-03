@@ -73,7 +73,7 @@ class LocalApiServer(
 
     private fun handle(client: Socket) {
         client.use { connection ->
-            connection.soTimeout = 120_000
+            connection.soTimeout = 300_000
             val input = BufferedInputStream(connection.getInputStream())
             val output = connection.getOutputStream()
             try {
