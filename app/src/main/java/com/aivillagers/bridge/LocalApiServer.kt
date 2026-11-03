@@ -11,44 +11,59 @@ import java.nio.charset.StandardCharsets
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Tiny loopback-only HTTP API for the Stardew Valley SMAPI mod.
+ * Loopback-only HTTP API for the Stardew Valley SMAPI mod.
  * GET /health
- * POST /chat  {"npc":"Abigail","message":"Привет","context":"..."}
+ * POST /chat {"npc":"Abigail","message":"Привет","context":"..."}
  */
 class LocalApiServer(
     private val handler: (JSONObject) -> JSONObject,
+    private val isModelReady: () -> Boolean,
     private val port: Int = 8765
 ) {
     private val running = AtomicBoolean(false)
     @Volatile private var socket: ServerSocket? = null
     private var thread: Thread? = null
 
+    @Synchronized
     fun start() {
-        if (!running.compareAndSet(false, true)) return
+        if (running.get()) return
+
+        // Bind before reporting success to the UI. Previously binding happened in
+        // a background thread and its exception was swallowed, producing a false
+        // "server started" status even when the port was unavailable.
+        val server = ServerSocket(port, 16, InetAddress.getByName("127.0.0.1"))
+        socket = server
+        running.set(true)
         thread = Thread({
             try {
-                val server = ServerSocket(port, 8, InetAddress.getByName("127.0.0.1"))
-                socket = server
                 while (running.get()) {
                     try {
                         val client = server.accept()
-                        Thread({ handle(client) }, "ai-villagers-client").start()
+                        Thread({ handle(client) }, "ai-villagers-client").apply {
+                            isDaemon = true
+                            start()
+                        }
                     } catch (t: Exception) {
                         if (running.get()) throw t
                     }
                 }
-            } catch (t: Throwable) {
+            } catch (_: Throwable) {
                 running.set(false)
             } finally {
-                try { socket?.close() } catch (_: Throwable) {}
+                try { server.close() } catch (_: Throwable) {}
                 socket = null
             }
-        }, "ai-villagers-http").apply { isDaemon = true; start() }
+        }, "ai-villagers-http").apply {
+            isDaemon = true
+            start()
+        }
     }
 
+    @Synchronized
     fun stop() {
         running.set(false)
         try { socket?.close() } catch (_: Throwable) {}
+        socket = null
         thread?.interrupt()
         thread = null
     }
@@ -72,11 +87,17 @@ class LocalApiServer(
                     }
                 }
                 if (method == "GET" && path == "/health") {
-                    respond(output, 200, JSONObject().put("status", "ok").put("modelLoaded", true))
+                    respond(output, 200, JSONObject()
+                        .put("status", "ok")
+                        .put("modelLoaded", isModelReady()))
                     return
                 }
                 if (method != "POST" || path != "/chat") {
                     respond(output, 404, JSONObject().put("error", "Not found"))
+                    return
+                }
+                if (!isModelReady()) {
+                    respond(output, 503, JSONObject().put("error", "Gemma model is not ready"))
                     return
                 }
                 if (contentLength !in 1..65536) {
@@ -94,7 +115,9 @@ class LocalApiServer(
                 val response = handler(request)
                 respond(output, 200, response)
             } catch (t: Throwable) {
-                respond(output, 500, JSONObject().put("error", t.message ?: "Internal error"))
+                try {
+                    respond(output, 500, JSONObject().put("error", t.message ?: "Internal error"))
+                } catch (_: Throwable) {}
             }
         }
     }
@@ -119,7 +142,13 @@ class LocalApiServer(
 
     private fun respond(output: java.io.OutputStream, code: Int, body: JSONObject) {
         val payload = body.toString().toByteArray(StandardCharsets.UTF_8)
-        val status = if (code == 200) "OK" else if (code == 404) "Not Found" else "Bad Request"
+        val status = when (code) {
+            200 -> "OK"
+            404 -> "Not Found"
+            503 -> "Service Unavailable"
+            500 -> "Internal Server Error"
+            else -> "Bad Request"
+        }
         val header = "HTTP/1.1 $code $status\r\n" +
             "Content-Type: application/json; charset=utf-8\r\n" +
             "Content-Length: ${payload.size}\r\n" +
